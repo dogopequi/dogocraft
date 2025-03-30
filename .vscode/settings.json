@@ -1,0 +1,19 @@
+{
+    "files.associations": {
+        "raylib.h": "c",
+        "stdlib.h": "c",
+        "stdio.h": "c",
+        "core.h": "c",
+        "variant": "c",
+        "fastnoiselite.h": "c",
+        "rlgl.h": "c",
+        "utils.h": "c",
+        "array": "c",
+        "string_view": "c",
+        "format": "c",
+        "initializer_list": "c",
+        "span": "c",
+        "deque": "c",
+        "vector": "c"
+    }
+}
