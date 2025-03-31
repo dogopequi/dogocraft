@@ -3,19 +3,47 @@
 #include "rlgl.h" 
 #define FNL_IMPL
 #include "FastNoiseLite.h"
-float getHeight(int x, int z) {
+float* get_noise() {
     fnl_state noise = fnlCreateState();
     noise.noise_type = FNL_NOISE_OPENSIMPLEX2;
+    noise.seed = 1367;
+    noise.frequency = 0.014f;
+    noise.fractal_type = FNL_FRACTAL_PINGPONG;
+    noise.octaves = 8;
+    noise.lacunarity = 1.3f;
+    noise.gain = 0.130f;
+    noise.weighted_strength = 0.760f;
+    noise.ping_pong_strength = 1.170f;
 
-    // Generate base noise value (you could add more layers of noise for better variation)
-    float baseNoise = fnlGetNoise2D(&noise, x, z);
+    float* noise_data = malloc(128*128 * sizeof(float));  // No need for 32x32x32
+    int index = 0;
 
-    // Amplify and scale the noise to a desired height range
-    // This adds more variety by scaling it to a range between 0 and 32 (or another number as needed)
-    float height = (baseNoise + 1.0f) * 16.0f;  // This scales the noise value between 0 and 32
+    // Generate 2D noise for chunk
+    for (int y = 0; y < 128; y++) {
+        for (int x = 0; x < 128; x++) {
+            // Generate noise value between -1 and 1 and store it
+            noise_data[index++] = fnlGetNoise2D(&noise, x, y);
+        }
+    }
 
-    return height;  // You can modify this value to create taller or flatter terrain
+    return noise_data;
 }
+
+int rand_int(int n) {
+    int result;
+    while (n <= (result = rand() / (RAND_MAX / n)));
+    return result;
+}
+
+double rand_double() {
+    return (double)rand() / (double)RAND_MAX;
+}
+
+float rand_float() {
+    return (float)rand() / (float)RAND_MAX;
+}
+
+
 
 
 void DrawCubeTexture(Texture2D texture, Vector3 position, float width, float height, float length, Color color)

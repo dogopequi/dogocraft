@@ -36,15 +36,17 @@ Chunk* create_chunk(int height, Vector3 pos){
         free(chunk);
         return NULL;
     }
-    int index = 0;
-    for (int z = 0; z < CHUNK_SIZE; z++) {
-        for (int x = 0; x < CHUNK_SIZE; x++) {
-            for (int y = 0; y < height; y++) {
-                chunk->blocks[index].type = GRASS;
-                chunk->blocks[index].pos = (Vector3){(float)x + pos.x, (float)y + pos.y, (float)z + pos.z};
-                index++;
-            }
-        }
+ for (int i = 0; i < CHUNK_SIZE * CHUNK_SIZE * height; i++) {
+        int x = i % CHUNK_SIZE;  
+        int y = (i / (CHUNK_SIZE * CHUNK_SIZE));
+        int z = (i / CHUNK_SIZE) % CHUNK_SIZE;  
+
+        chunk->blocks[i].type = GRASS;
+        chunk->blocks[i].pos = (Vector3){
+            (float)x + pos.x,
+            (float)y + pos.y,
+            (float)z + pos.z 
+        };
     }
     
     chunk->height = height;
@@ -53,75 +55,77 @@ Chunk* create_chunk(int height, Vector3 pos){
 
 void generateChunk(Chunk* chunk, int chunkX, int chunkZ) {
     int index = 0;
-    for (int x = 0; x < CHUNK_SIZE; x++) {
-        for (int z = 0; z < CHUNK_SIZE; z++) {
+    float* noise_data = get_noise();
+
+    for (int i = 0; i < CHUNK_SIZE * CHUNK_SIZE * chunk->height; i++) {
+        int x = i % CHUNK_SIZE;  
+        int y = (i / (CHUNK_SIZE * CHUNK_SIZE));
+        int z = (i / CHUNK_SIZE) % CHUNK_SIZE;  
             int worldX = chunkX * CHUNK_SIZE + x;
             int worldZ = chunkZ * CHUNK_SIZE + z;
-            float height = getHeight(worldX, worldZ);
 
-            height = fmin(height, chunk->height - 1);
+            int noiseIndex = (worldZ % 128) * 128 + (worldX % 128);
+            float height = noise_data[noiseIndex];
 
-            for (int y = 0; y < chunk->height; y++) {
-                if (y < height - 3) {
+            height = (height + 1.0f) * 16.0f;
+            int blockHeight = (int)fmax(1.0f, fmin(height, chunk->height - 1));
+
+                if (y < blockHeight - 3) {
                     chunk->blocks[index].type = STONE;
-                } else if (y < height) {
+                } else if (y < blockHeight - 1) {
                     chunk->blocks[index].type = DIRT;
-                } else if (y >= height && y < height + 1) {
+                } else if (y == blockHeight - 1) {
                     chunk->blocks[index].type = GRASS;
                 } else {
                     chunk->blocks[index].type = AIR;
                 }
                 index++;
-            }
-        }
     }
+
+    free(noise_data);
 }
 
 int validate_index(int index, int max, Chunk* chunk)
 {
-     if(index >= 0 && index < max){
-        if (chunk->blocks[index].type == AIR) {
-            return 0;
-        }
-        else
-            return 1;
-    }
-    else
+    if ((index < 0) || (index >= max))
         return 0;
-
-    return 0;
+    return chunk->blocks[index].type != AIR;
 }
+
 void validate_indexes(int left, int right, int top, int bottom, int front, int back, int max, int* canrender, Chunk* chunk)
 {
-    if(validate_index(left, max, chunk) != 0 &&
-       validate_index(right, max, chunk) != 0 &&
-       validate_index(top, max, chunk) != 0 &&
-       validate_index(bottom, max, chunk) != 0 &&
-       validate_index(front, max, chunk) != 0 &&
-       validate_index(back, max, chunk) != 0) {
+    if (validate_index(left, max, chunk) &&
+        validate_index(right, max, chunk) &&
+        validate_index(top, max, chunk) &&
+        validate_index(bottom, max, chunk) &&
+        validate_index(front, max, chunk) &&
+        validate_index(back, max, chunk)) {
         *canrender = 0;
+    } else {
+        *canrender = 1;
     }
 }
+
 
 
 void draw_chunk(Chunk* chunk)
 {
-    int index = 0;
     int max = CHUNK_SIZE*CHUNK_SIZE*chunk->height;
-    for (int z = 0; z < CHUNK_SIZE; z++) {
-        for (int x = 0; x < CHUNK_SIZE; x++) {
-            for (int y = 0; y < chunk->height; y++) {
-                Block block = chunk->blocks[index];
-                if(block.type != AIR)
+    for (int i = 0; i < CHUNK_SIZE * CHUNK_SIZE * chunk->height; i++) {
+        int x = i % CHUNK_SIZE;  
+        int y = (i / (CHUNK_SIZE * CHUNK_SIZE));
+        int z = (i / CHUNK_SIZE) % CHUNK_SIZE;  
+                Block block = chunk->blocks[i];
+                 if(block.type != AIR)
                 {
                     int can_render = 1;
+                    int left   = (x > 0) ? i - 1 : -1;
+                    int right  = (x < CHUNK_SIZE - 1) ? i + 1 : -1;
+                    int bottom = (y > 0) ? i - (CHUNK_SIZE * CHUNK_SIZE) : -1;
+                    int top    = (y < chunk->height - 1) ? i + (CHUNK_SIZE * CHUNK_SIZE) : -1;
+                    int front  = (z > 0) ? i - CHUNK_SIZE : -1;
+                    int back   = (z < CHUNK_SIZE - 1) ? i + CHUNK_SIZE : -1;
 
-                    int left   = index - chunk->height;                      // x - 1
-                    int right  = index + chunk->height;                      // x + 1
-                    int bottom = index - 1;                                  // y - 1
-                    int top    = index + 1;                                  // y + 1
-                    int front  = index - CHUNK_SIZE * chunk->height;         // z - 1
-                    int back   = index + CHUNK_SIZE * chunk->height;         // z + 1
 
                     validate_indexes(left, right, bottom, top, front, back, max, &can_render, chunk);
 
@@ -131,12 +135,9 @@ void draw_chunk(Chunk* chunk)
                         DrawCubeTexture(tex->texture, block.pos, 1.0f, 1.0f, 1.0f, WHITE);
                         DrawCubeWires(block.pos, 1.0f, 1.0f, 1.0f, DARKGRAY);
                     }
+
                 }
-                index++;
-            }
-        }
     }
-    
 }
 
 RenderTexture2D get_texture_from_atlas(Cell cell)

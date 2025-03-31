@@ -21,14 +21,13 @@ int main(void)
     SetTargetFPS(60);
 
     init_textures_array();
-    Chunk* chunk1 = create_chunk(32, (Vector3){0.0f, -16.0f, 0.0f});
-/*     Chunk* chunk2 = create_chunk(32, (Vector3){15.0f, -16.0f, 0.0f});
-    Chunk* chunk3 = create_chunk(32, (Vector3){-16.0f, -16.0f, 0.0f});
-    Chunk* chunk4 = create_chunk(32, (Vector3){0.0f, -16.0f, 16.0f}); */
-    generateChunk(chunk1, 0, 0);
-/*     generateChunk(chunk2, 0, 16);
-    generateChunk(chunk3, 0, 24);
-    generateChunk(chunk4, 0, 12); */
+    Chunk* chunk2 = create_chunk(32, (Vector3){0.0f, 0.0f, 0.0f});
+    Chunk* chunk3 = create_chunk(32, (Vector3){-16.0f, 0.0f, 0.0f});
+    Chunk* chunk4 = create_chunk(32, (Vector3){0.0f, 0.0f, 16.0f});
+    generateChunk(chunk2, 2, 16);
+     generateChunk(chunk3, 0, 24);
+    generateChunk(chunk4, 5, 12); 
+    printf("hre");
     while (!WindowShouldClose())
     {
         UpdateCameraPro(&camera,
@@ -49,16 +48,15 @@ int main(void)
         BeginDrawing();
         ClearBackground(RAYWHITE); 
         BeginMode3D(camera);
-        draw_chunk(chunk1);
-/*         draw_chunk(chunk2);
-        draw_chunk(chunk3);
-        draw_chunk(chunk4); */
+        draw_chunk(chunk2);
+         draw_chunk(chunk3);
+        draw_chunk(chunk4); 
         EndMode3D();
         DrawFPS(10, 10);
         EndDrawing();
     }
     free_textures_array();
-    CloseWindow();
+    CloseWindow(); 
     CloseAudioDevice();
     return 0;
 }
