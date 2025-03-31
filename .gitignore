@@ -1,0 +1,19 @@
+# directories
+.vs/
+bin/
+bin-int/
+build-Debug/
+.build-debug/
+build-Release/
+.build-release/
+
+# files
+*.user
+*.workspace
+*.sln
+*.vcxproj
+*.filters
+*.project
+*.mk
+*.txt
+*Makefile

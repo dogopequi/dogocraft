@@ -59,5 +59,6 @@ int main(void)
     CloseWindow(); 
     CloseAudioDevice();
     return 0;
+    // TODO collision, multiple chunks, water
 }
 
