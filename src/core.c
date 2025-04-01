@@ -41,7 +41,7 @@ Chunk* create_chunk(int height, Vector3 pos){
         int y = (i / (CHUNK_SIZE * CHUNK_SIZE));
         int z = (i / CHUNK_SIZE) % CHUNK_SIZE;  
 
-        chunk->blocks[i].type = GRASS;
+        chunk->blocks[i].type = PORTAL;
         chunk->blocks[i].pos = (Vector3){
             (float)x + pos.x,
             (float)y + pos.y,
@@ -71,13 +71,13 @@ void generateChunk(Chunk* chunk, int chunkX, int chunkZ) {
             int blockHeight = (int)fmax(1.0f, fmin(height, chunk->height - 1));
 
                 if (y < blockHeight - 3) {
-                    chunk->blocks[index].type = STONE;
+                    chunk->blocks[index].type = OBSIDIAN;
                 } else if (y < blockHeight - 1) {
-                    chunk->blocks[index].type = DIRT;
+                    chunk->blocks[index].type = OBSIDIAN;
                 } else if (y == blockHeight - 1) {
-                    chunk->blocks[index].type = GRASS;
+                    chunk->blocks[index].type = OBSIDIAN;
                 } else {
-                    chunk->blocks[index].type = AIR;
+                    chunk->blocks[index].type = OBSIDIAN;
                 }
                 index++;
     }
@@ -160,57 +160,12 @@ RenderTexture2D get_texture_from_atlas(Cell cell)
 Cell get_cell_from_type(int type)
 {
     Cell cell;
-    switch(type)
-    {
-        case AIR:
-            cell.row = 0;
-            cell.column = 0;
-            break;
-        case GRASS:
-            cell.row = 3;
-            cell.column = 29;
-            break;
-        case STONE:
-            cell.row = 3;
-            cell.column = 22;
-            break;
-        case DIRT:
-            cell.row = 0;
-            cell.column = 26;
-            break;
-        case LOG:
-            cell.row = 0;
-            cell.column = 0;
-            break;
-        case LEAVES:
-            cell.row = 0;
-            cell.column = 0;
-            break;
-        case GLASS:
-            cell.row = 0;
-            cell.column = 0;
-            break;
-        case SAND:
-            cell.row = 0;
-            cell.column = 0;
-            break;
-        case WATER:
-            cell.row = 0;
-            cell.column = 0;
-            break;
-        case PLANKS:
-            cell.row = 0;
-            cell.column = 0;
-            break;
-        case CRAFTING_TABLE:
-            cell.row = 0;
-            cell.column = 0;
-            break;
-        default:
-            cell.row = 0;
-            cell.column = 0;
-            break;
-
-    }
+    int columns = 64;
+    int rows = 32;
+    
+    cell.column = type % columns; 
+    
+    cell.row = (type / (columns * rows));
+    printf("column: %d, row: %d\n", cell.column, cell.row);
     return cell;
 }
