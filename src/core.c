@@ -3,7 +3,10 @@
 #include <stdio.h>
 #include "utils.h"
 #include <math.h>
+#define FNL_IMPL
+#include "FastNoiseLite.h"
 RenderTexture2D* textures;
+Chunk* world[WORLD_SIZE][WORLD_SIZE];
 void free_textures_array()
 {
     free(textures);
@@ -21,6 +24,29 @@ void init_textures_array()
 RenderTexture2D* get_texture_from_type(int type)
 {
     return &textures[type];
+}
+
+void create_world()
+{
+    for(int chunkX = 0; chunkX < WORLD_SIZE; chunkX++)
+    {
+        for(int chunkZ = 0; chunkZ < WORLD_SIZE; chunkZ++)
+        {
+            world[chunkX][chunkZ] = malloc(sizeof(Chunk));
+            generateChunk(world[chunkX][chunkZ], chunkX, chunkZ);
+        }
+    }
+}
+
+void draw_world()
+{
+    for(int chunkX = 0; chunkX < WORLD_SIZE; chunkX++)
+    {
+        for(int chunkZ = 0; chunkZ < WORLD_SIZE; chunkZ++)
+        {
+            draw_chunk(world[chunkX][chunkZ]);
+        }
+    }
 }
 
 Chunk* create_chunk(int height, Vector3 pos){
@@ -54,8 +80,16 @@ Chunk* create_chunk(int height, Vector3 pos){
 }
 
 void generateChunk(Chunk* chunk, int chunkX, int chunkZ) {
-    int index = 0;
-    float* noise_data = get_noise();
+    fnl_state noise = fnlCreateState();
+    noise.noise_type = FNL_NOISE_OPENSIMPLEX2;
+    noise.seed = 1367;
+    noise.frequency = 0.014f;
+    noise.fractal_type = FNL_FRACTAL_PINGPONG;
+    noise.octaves = 8;
+    noise.lacunarity = 1.3f;
+    noise.gain = 0.130f;
+    noise.weighted_strength = 0.760f;
+    noise.ping_pong_strength = 1.170f;
 
     for (int i = 0; i < CHUNK_SIZE * CHUNK_SIZE * chunk->height; i++) {
         int x = i % CHUNK_SIZE;  
@@ -64,27 +98,22 @@ void generateChunk(Chunk* chunk, int chunkX, int chunkZ) {
             int worldX = chunkX * CHUNK_SIZE + x;
             int worldZ = chunkZ * CHUNK_SIZE + z;
 
-            int noiseIndex = (worldZ % 128) * 128 + (worldX % 128);
-            float height = noise_data[noiseIndex];
+            float height = get_noise_at(&noise, worldX, worldZ);
 
             height = (height + 1.0f) * 16.0f;
             int blockHeight = (int)fmax(1.0f, fmin(height, chunk->height - 1));
 
                 if (y < blockHeight - 3) {
-                    chunk->blocks[index].type = OBSIDIAN;
+                    chunk->blocks[i].type = PLANT_CHERRY;
                 } else if (y < blockHeight - 1) {
-                    chunk->blocks[index].type = OBSIDIAN;
+                    chunk->blocks[i].type = QUARTZ_SIDE;
                 } else if (y == blockHeight - 1) {
-                    chunk->blocks[index].type = OBSIDIAN;
+                    chunk->blocks[i].type = WOOL_BLUE;
                 } else {
-                    chunk->blocks[index].type = OBSIDIAN;
+                    chunk->blocks[i].type = AIR;
                 }
-                index++;
     }
-
-    free(noise_data);
 }
-
 int validate_index(int index, int max, Chunk* chunk)
 {
     if ((index < 0) || (index >= max))
@@ -160,12 +189,24 @@ RenderTexture2D get_texture_from_atlas(Cell cell)
 Cell get_cell_from_type(int type)
 {
     Cell cell;
-    int columns = 64;
-    int rows = 32;
-    
-    cell.column = type % columns; 
-    
-    cell.row = (type / (columns * rows));
+    cell.column = type % COLUMNS; 
+    cell.row = (type / COLUMNS) % ROWS; 
     printf("column: %d, row: %d\n", cell.column, cell.row);
     return cell;
+}
+
+float get_noise_at(fnl_state* noise, int worldX, int worldZ)
+{
+    float n00 = fnlGetNoise2D(noise, worldX, worldZ);
+    float n10 = fnlGetNoise2D(noise, worldX + 1, worldZ);
+    float n01 = fnlGetNoise2D(noise, worldX, worldZ + 1);
+    float n11 = fnlGetNoise2D(noise, worldX + 1, worldZ + 1);
+
+    float blendX = worldX - (int)worldX;
+    float blendZ = worldZ - (int)worldZ;
+
+    float interpolatedX1 = n00 * (1 - blendX) + n10 * blendX;
+    float interpolatedX2 = n01 * (1 - blendX) + n11 * blendX;
+
+    return interpolatedX1 * (1 - blendZ) + interpolatedX2 * blendZ;
 }

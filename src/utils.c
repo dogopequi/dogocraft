@@ -1,33 +1,6 @@
 #include "utils.h"
 #include "raylib.h"
 #include "rlgl.h" 
-#define FNL_IMPL
-#include "FastNoiseLite.h"
-float* get_noise() {
-    fnl_state noise = fnlCreateState();
-    noise.noise_type = FNL_NOISE_OPENSIMPLEX2;
-    noise.seed = 1367;
-    noise.frequency = 0.014f;
-    noise.fractal_type = FNL_FRACTAL_PINGPONG;
-    noise.octaves = 8;
-    noise.lacunarity = 1.3f;
-    noise.gain = 0.130f;
-    noise.weighted_strength = 0.760f;
-    noise.ping_pong_strength = 1.170f;
-
-    float* noise_data = malloc(128*128 * sizeof(float));  // No need for 32x32x32
-    int index = 0;
-
-    // Generate 2D noise for chunk
-    for (int y = 0; y < 128; y++) {
-        for (int x = 0; x < 128; x++) {
-            // Generate noise value between -1 and 1 and store it
-            noise_data[index++] = fnlGetNoise2D(&noise, x, y);
-        }
-    }
-
-    return noise_data;
-}
 
 int rand_int(int n) {
     int result;
