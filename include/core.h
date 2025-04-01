@@ -2,16 +2,21 @@
 #define CORE_H
 #include "raylib.h"
 #include "utils.h"
-#include "fastnoiselite.h"
+#include "FastNoiseLite.h"
 #define CHUNK_SIZE 16
-#define WORLD_SIZE 5
+#define CHUNK_HEIGHT 32
+#define WORLD_SIZE 1
 
 #define CUBE_SIZE 32
+
 #define COLUMNS 23
 #define ROWS 16
+
 #define CELL_WIDTH 16
 #define CELL_HEIGHT 16
+
 #define TEXTURES_COUNT 46
+
 #define AIR -1
 #define LAVA_0 0
 #define LAVA_1 1
@@ -69,29 +74,26 @@ typedef struct Cell{
 typedef struct Block{
     int type;
     Vector3 pos;
+    Mesh mesh;
 
 } Block;
 
 typedef struct Chunk {
     Block* blocks;
-    int height;
-
 } Chunk;
 
-Chunk* create_chunk(int height, Vector3 pos);
 void draw_chunk(Chunk* chunk);
 int validate_index(int index, int max, Chunk* chunk);
 void validate_indexes(int left, int right, int top, int bottom, int front, int back, int max, int* canrender, Chunk* chunk);
 void generateChunk(Chunk* chunk, int chunkX, int chunkZ);
 Cell get_cell_from_type(int type);
-RenderTexture2D get_texture_from_atlas(Cell cell);
 float get_noise_at(fnl_state* noise, int worldX, int worldZ);
-void init_textures_array();
-void free_textures_array();
+void load_texture();
 void create_world();
-void draw_world();
-
+void draw_world(Camera camera);
 extern RenderTexture2D* textures;
 extern Chunk* world[WORLD_SIZE][WORLD_SIZE];
+extern Texture2D atlas;
+
 
 #endif

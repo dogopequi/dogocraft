@@ -1,5 +1,10 @@
 {
     "files.associations": {
-        "utils.h": "c"
+        "utils.h": "c",
+        "stdlib.h": "c",
+        "core.h": "c",
+        "math.h": "c",
+        "raylib.h": "c",
+        "stdio.h": "c"
     }
 }

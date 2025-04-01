@@ -1,24 +1,19 @@
+#define FNL_IMPL
 #include "core.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include "utils.h"
 #include <math.h>
-#define FNL_IMPL
-#include "FastNoiseLite.h"
+#include "raymath.h"
 RenderTexture2D* textures;
 Chunk* world[WORLD_SIZE][WORLD_SIZE];
-void free_textures_array()
+Texture2D atlas;
+
+#include "raylib.h"
+
+void load_texture()
 {
-    free(textures);
-}
-void init_textures_array()
-{
-    textures = (RenderTexture2D*)malloc(TEXTURES_COUNT * sizeof(RenderTexture2D));
-    for(int i = 0; i < TEXTURES_COUNT;  i++)
-    {
-        Cell cell = get_cell_from_type(i);
-        textures[i] = get_texture_from_atlas(cell);
-    }
+    atlas = LoadTexture("resources/atlas.png");
 }
 
 RenderTexture2D* get_texture_from_type(int type)
@@ -37,49 +32,23 @@ void create_world()
         }
     }
 }
-
-void draw_world()
+void draw_world(Camera camera)
 {
-    for(int chunkX = 0; chunkX < WORLD_SIZE; chunkX++)
+    for (int chunkX = 0; chunkX < WORLD_SIZE; chunkX++)
     {
-        for(int chunkZ = 0; chunkZ < WORLD_SIZE; chunkZ++)
+        for (int chunkZ = 0; chunkZ < WORLD_SIZE; chunkZ++)
         {
-            draw_chunk(world[chunkX][chunkZ]);
+/*             if (is_chunk_visible(camera, world[chunkX][chunkZ], chunkX, chunkZ))
+            { */
+                draw_chunk(world[chunkX][chunkZ]);
+/*             } */
         }
     }
 }
 
-Chunk* create_chunk(int height, Vector3 pos){
-    Chunk* chunk = (Chunk*)malloc(sizeof(Chunk));
-    if (!chunk) {
-        printf("Failed to allocate memory for chunk\n");
-        return NULL;
-    }
 
-    chunk->blocks = (Block*)malloc((CHUNK_SIZE*CHUNK_SIZE*height) * sizeof(Block));
-    if (!chunk->blocks) {
-        printf("Failed to allocate memory for chunk blocks\n");
-        free(chunk);
-        return NULL;
-    }
- for (int i = 0; i < CHUNK_SIZE * CHUNK_SIZE * height; i++) {
-        int x = i % CHUNK_SIZE;  
-        int y = (i / (CHUNK_SIZE * CHUNK_SIZE));
-        int z = (i / CHUNK_SIZE) % CHUNK_SIZE;  
-
-        chunk->blocks[i].type = PORTAL;
-        chunk->blocks[i].pos = (Vector3){
-            (float)x + pos.x,
-            (float)y + pos.y,
-            (float)z + pos.z 
-        };
-    }
-    
-    chunk->height = height;
-    return chunk;
-}
-
-void generateChunk(Chunk* chunk, int chunkX, int chunkZ) {
+void generateChunk(Chunk* chunk, int chunkX, int chunkZ) 
+{
     fnl_state noise = fnlCreateState();
     noise.noise_type = FNL_NOISE_OPENSIMPLEX2;
     noise.seed = 1367;
@@ -90,8 +59,18 @@ void generateChunk(Chunk* chunk, int chunkX, int chunkZ) {
     noise.gain = 0.130f;
     noise.weighted_strength = 0.760f;
     noise.ping_pong_strength = 1.170f;
+    int chunkWorldX = chunkX * CHUNK_SIZE;
+    int chunkWorldZ = chunkZ * CHUNK_SIZE;
 
-    for (int i = 0; i < CHUNK_SIZE * CHUNK_SIZE * chunk->height; i++) {
+
+    chunk->blocks = (Block*)malloc((CHUNK_SIZE*CHUNK_SIZE*CHUNK_HEIGHT) * sizeof(Block));
+    if (!chunk->blocks) {
+        printf("Failed to allocate memory for chunk blocks\n");
+        free(chunk);
+        return;
+    }
+
+    for (int i = 0; i < CHUNK_SIZE * CHUNK_SIZE * CHUNK_HEIGHT; i++) {
         int x = i % CHUNK_SIZE;  
         int y = (i / (CHUNK_SIZE * CHUNK_SIZE));
         int z = (i / CHUNK_SIZE) % CHUNK_SIZE;  
@@ -101,17 +80,27 @@ void generateChunk(Chunk* chunk, int chunkX, int chunkZ) {
             float height = get_noise_at(&noise, worldX, worldZ);
 
             height = (height + 1.0f) * 16.0f;
-            int blockHeight = (int)fmax(1.0f, fmin(height, chunk->height - 1));
-
+            int blockHeight = (int)fmax(1.0f, fmin(height, CHUNK_HEIGHT - 1));
+            chunk->blocks[i].pos = (Vector3){
+            (float)x + chunkWorldX,
+            (float)y,
+            (float)z + chunkWorldZ 
+            };
                 if (y < blockHeight - 3) {
-                    chunk->blocks[i].type = PLANT_CHERRY;
+                    chunk->blocks[i].type = FURNACE_SIDE;
                 } else if (y < blockHeight - 1) {
-                    chunk->blocks[i].type = QUARTZ_SIDE;
+                    chunk->blocks[i].type = STONE_SLAB;
                 } else if (y == blockHeight - 1) {
-                    chunk->blocks[i].type = WOOL_BLUE;
+                    chunk->blocks[i].type = DIRT_HOED;
                 } else {
                     chunk->blocks[i].type = AIR;
                 }
+
+        if(chunk->blocks[i].type != AIR)
+        {
+            Cell cell = get_cell_from_type(chunk->blocks[i].type);
+            //chunk->blocks[i].mesh = CreateCubeWithAtlas(&cell);
+        }
     }
 }
 int validate_index(int index, int max, Chunk* chunk)
@@ -139,11 +128,11 @@ void validate_indexes(int left, int right, int top, int bottom, int front, int b
 
 void draw_chunk(Chunk* chunk)
 {
-    int max = CHUNK_SIZE*CHUNK_SIZE*chunk->height;
-    for (int i = 0; i < CHUNK_SIZE * CHUNK_SIZE * chunk->height; i++) {
+    int max = CHUNK_SIZE*CHUNK_SIZE*CHUNK_HEIGHT;
+    for (int i = 0; i < CHUNK_SIZE * CHUNK_SIZE * CHUNK_HEIGHT; i++) {
         int x = i % CHUNK_SIZE;  
         int y = (i / (CHUNK_SIZE * CHUNK_SIZE));
-        int z = (i / CHUNK_SIZE) % CHUNK_SIZE;  
+        int z = (i / CHUNK_SIZE) % CHUNK_SIZE; 
                 Block block = chunk->blocks[i];
                  if(block.type != AIR)
                 {
@@ -151,7 +140,7 @@ void draw_chunk(Chunk* chunk)
                     int left   = (x > 0) ? i - 1 : -1;
                     int right  = (x < CHUNK_SIZE - 1) ? i + 1 : -1;
                     int bottom = (y > 0) ? i - (CHUNK_SIZE * CHUNK_SIZE) : -1;
-                    int top    = (y < chunk->height - 1) ? i + (CHUNK_SIZE * CHUNK_SIZE) : -1;
+                    int top    = (y < CHUNK_HEIGHT - 1) ? i + (CHUNK_SIZE * CHUNK_SIZE) : -1;
                     int front  = (z > 0) ? i - CHUNK_SIZE : -1;
                     int back   = (z < CHUNK_SIZE - 1) ? i + CHUNK_SIZE : -1;
 
@@ -160,38 +149,26 @@ void draw_chunk(Chunk* chunk)
 
                     if (can_render == 1) 
                     {
-                        RenderTexture2D* tex = get_texture_from_type(block.type);
-                        DrawCubeTexture(tex->texture, block.pos, 1.0f, 1.0f, 1.0f, WHITE);
-                        DrawCubeWires(block.pos, 1.0f, 1.0f, 1.0f, DARKGRAY);
+                        Cell cell = get_cell_from_type(block.type);
+/*                         Matrix transform = MatrixTranslate(block.pos.x, block.pos.y, block.pos.z);
+                        DrawCustomCube(transform, &block); */
+                        //RenderTexture2D* tex = get_texture_from_type(block.type);
+                        //DrawCubeTexture(tex->texture, block.pos, 1.0f, 1.0f, 1.0f, WHITE);
+                        //DrawCubeWires(block.pos, 1.0f, 1.0f, 1.0f, DARKGRAY);
                     }
 
                 }
     }
 }
 
-RenderTexture2D get_texture_from_atlas(Cell cell)
-{
-    Texture2D atlas = LoadTexture("resources/atlas.png");
-    Rectangle source = {
-        cell.column * CELL_WIDTH,
-        cell.row * CELL_HEIGHT,
-        CELL_WIDTH,
-        CELL_HEIGHT
-    };
-     RenderTexture2D croppedRender = LoadRenderTexture(CELL_WIDTH, CELL_HEIGHT);
-     BeginTextureMode(croppedRender);
-        ClearBackground(BLANK);
-        DrawTextureRec(atlas, source, (Vector2){ 0, 0 }, WHITE);
-    EndTextureMode();
-    return croppedRender;
-}
+
+
 
 Cell get_cell_from_type(int type)
 {
     Cell cell;
     cell.column = type % COLUMNS; 
     cell.row = (type / COLUMNS) % ROWS; 
-    printf("column: %d, row: %d\n", cell.column, cell.row);
     return cell;
 }
 

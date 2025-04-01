@@ -20,10 +20,17 @@ int main(void)
     DisableCursor();
     SetTargetFPS(60);
 
-    init_textures_array();
-/*     Chunk* chunk2 = create_chunk(32, (Vector3){0.0f, 0.0f, 0.0f});
-    generateChunk(chunk2, 2, 16); */
+    load_texture();
     create_world();
+    Mesh cube = GenMeshCube(1.0f, 1.0f, 1.0f);
+    Texture2D texture = LoadTexture("resources/atlas.png");
+    Cell cell = get_cell_from_type(OBSIDIAN);
+    Rectangle source = {
+        cell.column * CELL_WIDTH,
+        cell.row * CELL_HEIGHT,
+        CELL_WIDTH,
+        CELL_HEIGHT
+    };
     while (!WindowShouldClose())
     {
         UpdateCameraPro(&camera,
@@ -44,13 +51,13 @@ int main(void)
         BeginDrawing();
         ClearBackground(RAYWHITE); 
         BeginMode3D(camera);
-        draw_world();
-/*         draw_chunk(chunk2); */
+        //DrawCubeTexture(texture, (Vector3){ -2.0f, 2.0f, 0.0f }, 1.0f, 1.0f, 1.0f, WHITE);
+        DrawCubeRightTexture(texture, source, (Vector3){ -2.0f, 2.0f, 0.0f }, 1.0f, 1.0f, 1.0f, WHITE);
+       //draw_world(camera);
         EndMode3D();
         DrawFPS(10, 10);
         EndDrawing();
     }
-    free_textures_array();
     CloseWindow(); 
     CloseAudioDevice();
     return 0;
