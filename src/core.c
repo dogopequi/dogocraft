@@ -11,6 +11,33 @@ Texture2D atlas;
 
 #include "raylib.h"
 
+void init_textures()
+{
+    textures = (RenderTexture2D*)malloc(TEXTURES_COUNT * sizeof(RenderTexture2D));
+    for(int i = 0; i < TEXTURES_COUNT;  i++)
+    {
+        Cell cell = get_cell_from_type(i);
+        textures[i] = get_texture_from_atlas(cell);
+    }
+}
+
+RenderTexture2D get_texture_from_atlas(Cell cell)
+{
+    Texture2D atlas = LoadTexture("resources/atlas.png");
+    Rectangle source = {
+        cell.column * CELL_WIDTH,
+        cell.row * CELL_HEIGHT,
+        CELL_WIDTH,
+        CELL_HEIGHT
+    };
+     RenderTexture2D croppedRender = LoadRenderTexture(CELL_WIDTH, CELL_HEIGHT);
+     BeginTextureMode(croppedRender);
+        ClearBackground(BLANK);
+        DrawTextureRec(atlas, source, (Vector2){ 0, 0 }, WHITE);
+    EndTextureMode();
+    return croppedRender;
+}
+
 void load_texture()
 {
     atlas = LoadTexture("resources/atlas.png");
@@ -96,11 +123,11 @@ void generateChunk(Chunk* chunk, int chunkX, int chunkZ)
                     chunk->blocks[i].type = AIR;
                 }
 
-        if(chunk->blocks[i].type != AIR)
+/*         if(chunk->blocks[i].type != AIR)
         {
             Cell cell = get_cell_from_type(chunk->blocks[i].type);
             //chunk->blocks[i].mesh = CreateCubeWithAtlas(&cell);
-        }
+        } */
     }
 }
 int validate_index(int index, int max, Chunk* chunk)
@@ -149,12 +176,12 @@ void draw_chunk(Chunk* chunk)
 
                     if (can_render == 1) 
                     {
-                        Cell cell = get_cell_from_type(block.type);
+                        //Cell cell = get_cell_from_type(block.type);
 /*                         Matrix transform = MatrixTranslate(block.pos.x, block.pos.y, block.pos.z);
                         DrawCustomCube(transform, &block); */
-                        //RenderTexture2D* tex = get_texture_from_type(block.type);
-                        //DrawCubeTexture(tex->texture, block.pos, 1.0f, 1.0f, 1.0f, WHITE);
-                        //DrawCubeWires(block.pos, 1.0f, 1.0f, 1.0f, DARKGRAY);
+                        RenderTexture2D* tex = get_texture_from_type(block.type);
+                        DrawCubeTexture(tex->texture, block.pos, 1.0f, 1.0f, 1.0f, WHITE);
+                        DrawCubeWires(block.pos, 1.0f, 1.0f, 1.0f, DARKGRAY);
                     }
 
                 }

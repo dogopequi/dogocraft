@@ -20,7 +20,8 @@ int main(void)
     DisableCursor();
     SetTargetFPS(60);
 
-    load_texture();
+    //load_texture();
+    init_textures();
     create_world();
     Mesh cube = GenMeshCube(1.0f, 1.0f, 1.0f);
     Texture2D texture = LoadTexture("resources/atlas.png");
@@ -52,8 +53,8 @@ int main(void)
         ClearBackground(RAYWHITE); 
         BeginMode3D(camera);
         //DrawCubeTexture(texture, (Vector3){ -2.0f, 2.0f, 0.0f }, 1.0f, 1.0f, 1.0f, WHITE);
-        DrawCubeRightTexture(texture, source, (Vector3){ -2.0f, 2.0f, 0.0f }, 1.0f, 1.0f, 1.0f, WHITE);
-       //draw_world(camera);
+        //DrawCubeRightTexture(texture, source, (Vector3){ -2.0f, 2.0f, 0.0f }, 1.0f, 1.0f, 1.0f, WHITE);
+       draw_world(camera);
         EndMode3D();
         DrawFPS(10, 10);
         EndDrawing();
