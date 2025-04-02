@@ -1,86 +1,97 @@
 #include "utils.h"
 #include "raylib.h"
 #include "rlgl.h" 
-
-int rand_int(int n) {
-    int result;
-    while (n <= (result = rand() / (RAND_MAX / n)));
-    return result;
-}
-
-double rand_double() {
-    return (double)rand() / (double)RAND_MAX;
-}
-
-float rand_float() {
-    return (float)rand() / (float)RAND_MAX;
-}
-
+#include <stdlib.h>
 #include <math.h>
 
+// Returns a random double between min and max
+double rand_double(double min, double max) {
+    return min + (max - min) * ((double)rand() / (double)RAND_MAX);
+}
+
+// Returns a random float between min and max
+float rand_float(float min, float max) {
+    return min + (max - min) * ((float)rand() / (float)RAND_MAX);
+}
 
 
 
 
-void DrawCubeTexture(Texture2D texture, Vector3 position, float width, float height, float length, Color color)
+
+void DrawCubeTexture(Texture2D texture, Rectangle source, Vector3 position, float width, float height, float length, Color color)
 {
     float x = position.x;
     float y = position.y;
     float z = position.z;
+    float texWidth = (float)texture.width;
+    float texHeight = (float)texture.height;
 
-    // Set desired texture to be enabled while drawing following vertex data
-    rlSetTexture(texture.id);
+        rlColor4ub(color.r, color.g, color.b, color.a);
+                    // Front face
+        rlNormal3f(0.0f, 0.0f, 1.0f);
+        rlTexCoord2f(source.x/texWidth, (source.y + source.height)/texHeight);
+        rlVertex3f(x - width/2, y - height/2, z + length/2);
+        rlTexCoord2f((source.x + source.width)/texWidth, (source.y + source.height)/texHeight);
+        rlVertex3f(x + width/2, y - height/2, z + length/2);
+        rlTexCoord2f((source.x + source.width)/texWidth, source.y/texHeight);
+        rlVertex3f(x + width/2, y + height/2, z + length/2);
+        rlTexCoord2f(source.x/texWidth, source.y/texHeight);
+        rlVertex3f(x - width/2, y + height/2, z + length/2);
 
-    // Vertex data transformation can be defined with the commented lines,
-    // but in this example we calculate the transformed vertex data directly when calling rlVertex3f()
-    //rlPushMatrix();
-        // NOTE: Transformation is applied in inverse order (scale -> rotate -> translate)
-        //rlTranslatef(2.0f, 0.0f, 0.0f);
-        //rlRotatef(45, 0, 1, 0);
-        //rlScalef(2.0f, 2.0f, 2.0f);
+        // Back face
+        rlNormal3f(0.0f, 0.0f, - 1.0f);
+        rlTexCoord2f((source.x + source.width)/texWidth, (source.y + source.height)/texHeight);
+        rlVertex3f(x - width/2, y - height/2, z - length/2);
+        rlTexCoord2f((source.x + source.width)/texWidth, source.y/texHeight);
+        rlVertex3f(x - width/2, y + height/2, z - length/2);
+        rlTexCoord2f(source.x/texWidth, source.y/texHeight);
+        rlVertex3f(x + width/2, y + height/2, z - length/2);
+        rlTexCoord2f(source.x/texWidth, (source.y + source.height)/texHeight);
+        rlVertex3f(x + width/2, y - height/2, z - length/2);
 
-        rlBegin(RL_QUADS);
-            rlColor4ub(color.r, color.g, color.b, color.a);
-            // Front Face
-            rlNormal3f(0.0f, 0.0f, 1.0f);       // Normal Pointing Towards Viewer
-            rlTexCoord2f(0.0f, 0.0f); rlVertex3f(x - width/2, y - height/2, z + length/2);  // Bottom Left Of The Texture and Quad
-            rlTexCoord2f(1.0f, 0.0f); rlVertex3f(x + width/2, y - height/2, z + length/2);  // Bottom Right Of The Texture and Quad
-            rlTexCoord2f(1.0f, 1.0f); rlVertex3f(x + width/2, y + height/2, z + length/2);  // Top Right Of The Texture and Quad
-            rlTexCoord2f(0.0f, 1.0f); rlVertex3f(x - width/2, y + height/2, z + length/2);  // Top Left Of The Texture and Quad
-            // Back Face
-            rlNormal3f(0.0f, 0.0f, - 1.0f);     // Normal Pointing Away From Viewer
-            rlTexCoord2f(1.0f, 0.0f); rlVertex3f(x - width/2, y - height/2, z - length/2);  // Bottom Right Of The Texture and Quad
-            rlTexCoord2f(1.0f, 1.0f); rlVertex3f(x - width/2, y + height/2, z - length/2);  // Top Right Of The Texture and Quad
-            rlTexCoord2f(0.0f, 1.0f); rlVertex3f(x + width/2, y + height/2, z - length/2);  // Top Left Of The Texture and Quad
-            rlTexCoord2f(0.0f, 0.0f); rlVertex3f(x + width/2, y - height/2, z - length/2);  // Bottom Left Of The Texture and Quad
-            // Top Face
-            rlNormal3f(0.0f, 1.0f, 0.0f);       // Normal Pointing Up
-            rlTexCoord2f(0.0f, 1.0f); rlVertex3f(x - width/2, y + height/2, z - length/2);  // Top Left Of The Texture and Quad
-            rlTexCoord2f(0.0f, 0.0f); rlVertex3f(x - width/2, y + height/2, z + length/2);  // Bottom Left Of The Texture and Quad
-            rlTexCoord2f(1.0f, 0.0f); rlVertex3f(x + width/2, y + height/2, z + length/2);  // Bottom Right Of The Texture and Quad
-            rlTexCoord2f(1.0f, 1.0f); rlVertex3f(x + width/2, y + height/2, z - length/2);  // Top Right Of The Texture and Quad
-            // Bottom Face
-            rlNormal3f(0.0f, - 1.0f, 0.0f);     // Normal Pointing Down
-            rlTexCoord2f(1.0f, 1.0f); rlVertex3f(x - width/2, y - height/2, z - length/2);  // Top Right Of The Texture and Quad
-            rlTexCoord2f(0.0f, 1.0f); rlVertex3f(x + width/2, y - height/2, z - length/2);  // Top Left Of The Texture and Quad
-            rlTexCoord2f(0.0f, 0.0f); rlVertex3f(x + width/2, y - height/2, z + length/2);  // Bottom Left Of The Texture and Quad
-            rlTexCoord2f(1.0f, 0.0f); rlVertex3f(x - width/2, y - height/2, z + length/2);  // Bottom Right Of The Texture and Quad
-            // Right face
-            rlNormal3f(1.0f, 0.0f, 0.0f);       // Normal Pointing Right
-            rlTexCoord2f(1.0f, 0.0f); rlVertex3f(x + width/2, y - height/2, z - length/2);  // Bottom Right Of The Texture and Quad
-            rlTexCoord2f(1.0f, 1.0f); rlVertex3f(x + width/2, y + height/2, z - length/2);  // Top Right Of The Texture and Quad
-            rlTexCoord2f(0.0f, 1.0f); rlVertex3f(x + width/2, y + height/2, z + length/2);  // Top Left Of The Texture and Quad
-            rlTexCoord2f(0.0f, 0.0f); rlVertex3f(x + width/2, y - height/2, z + length/2);  // Bottom Left Of The Texture and Quad
-            // Left Face
-            rlNormal3f( - 1.0f, 0.0f, 0.0f);    // Normal Pointing Left
-            rlTexCoord2f(0.0f, 0.0f); rlVertex3f(x - width/2, y - height/2, z - length/2);  // Bottom Left Of The Texture and Quad
-            rlTexCoord2f(1.0f, 0.0f); rlVertex3f(x - width/2, y - height/2, z + length/2);  // Bottom Right Of The Texture and Quad
-            rlTexCoord2f(1.0f, 1.0f); rlVertex3f(x - width/2, y + height/2, z + length/2);  // Top Right Of The Texture and Quad
-            rlTexCoord2f(0.0f, 1.0f); rlVertex3f(x - width/2, y + height/2, z - length/2);  // Top Left Of The Texture and Quad
-        rlEnd();
-    //rlPopMatrix();
+        // Top face
+        rlNormal3f(0.0f, 1.0f, 0.0f);
+        rlTexCoord2f(source.x/texWidth, source.y/texHeight);
+        rlVertex3f(x - width/2, y + height/2, z - length/2);
+        rlTexCoord2f(source.x/texWidth, (source.y + source.height)/texHeight);
+        rlVertex3f(x - width/2, y + height/2, z + length/2);
+        rlTexCoord2f((source.x + source.width)/texWidth, (source.y + source.height)/texHeight);
+        rlVertex3f(x + width/2, y + height/2, z + length/2);
+        rlTexCoord2f((source.x + source.width)/texWidth, source.y/texHeight);
+        rlVertex3f(x + width/2, y + height/2, z - length/2);
 
-    rlSetTexture(0);
+        // Bottom face
+        rlNormal3f(0.0f, - 1.0f, 0.0f);
+        rlTexCoord2f((source.x + source.width)/texWidth, source.y/texHeight);
+        rlVertex3f(x - width/2, y - height/2, z - length/2);
+        rlTexCoord2f(source.x/texWidth, source.y/texHeight);
+        rlVertex3f(x + width/2, y - height/2, z - length/2);
+        rlTexCoord2f(source.x/texWidth, (source.y + source.height)/texHeight);
+        rlVertex3f(x + width/2, y - height/2, z + length/2);
+        rlTexCoord2f((source.x + source.width)/texWidth, (source.y + source.height)/texHeight);
+        rlVertex3f(x - width/2, y - height/2, z + length/2);
+
+        // Right face
+        rlNormal3f(1.0f, 0.0f, 0.0f);
+        rlTexCoord2f((source.x + source.width)/texWidth, (source.y + source.height)/texHeight);
+        rlVertex3f(x + width/2, y - height/2, z - length/2);
+        rlTexCoord2f((source.x + source.width)/texWidth, source.y/texHeight);
+        rlVertex3f(x + width/2, y + height/2, z - length/2);
+        rlTexCoord2f(source.x/texWidth, source.y/texHeight);
+        rlVertex3f(x + width/2, y + height/2, z + length/2);
+        rlTexCoord2f(source.x/texWidth, (source.y + source.height)/texHeight);
+        rlVertex3f(x + width/2, y - height/2, z + length/2);
+
+        // Left face
+        rlNormal3f( - 1.0f, 0.0f, 0.0f);
+        rlTexCoord2f(source.x/texWidth, (source.y + source.height)/texHeight);
+        rlVertex3f(x - width/2, y - height/2, z - length/2);
+        rlTexCoord2f((source.x + source.width)/texWidth, (source.y + source.height)/texHeight);
+        rlVertex3f(x - width/2, y - height/2, z + length/2);
+        rlTexCoord2f((source.x + source.width)/texWidth, source.y/texHeight);
+        rlVertex3f(x - width/2, y + height/2, z + length/2);
+        rlTexCoord2f(source.x/texWidth, source.y/texHeight);
+        rlVertex3f(x - width/2, y + height/2, z - length/2);
 }
 void DrawCubeTopTexture(Texture2D texture, Rectangle source, Vector3 position, float width, float height, float length, Color color)
 {
@@ -90,8 +101,6 @@ void DrawCubeTopTexture(Texture2D texture, Rectangle source, Vector3 position, f
     float texWidth = (float)texture.width;
     float texHeight = (float)texture.height;
 
-    // Set desired texture to be enabled while drawing following vertex data
-    rlSetTexture(texture.id);
 
     // Vertex data transformation can be defined with the commented lines,
     // but in this example we calculate the transformed vertex data directly when calling rlVertex3f()
@@ -100,8 +109,6 @@ void DrawCubeTopTexture(Texture2D texture, Rectangle source, Vector3 position, f
         //rlTranslatef(2.0f, 0.0f, 0.0f);
         //rlRotatef(45, 0, 1, 0);
         //rlScalef(2.0f, 2.0f, 2.0f);
-
-        rlBegin(RL_QUADS);
         rlColor4ub(color.r, color.g, color.b, color.a);
         rlNormal3f(0.0f, 1.0f, 0.0f);
         rlTexCoord2f(source.x/texWidth, source.y/texHeight);
@@ -112,10 +119,7 @@ void DrawCubeTopTexture(Texture2D texture, Rectangle source, Vector3 position, f
         rlVertex3f(x + width/2, y + height/2, z + length/2);
         rlTexCoord2f((source.x + source.width)/texWidth, source.y/texHeight);
         rlVertex3f(x + width/2, y + height/2, z - length/2);
-        rlEnd();
     //rlPopMatrix();
-
-    rlSetTexture(0);
 }
 void DrawCubeBottomTexture(Texture2D texture, Rectangle source, Vector3 position, float width, float height, float length, Color color)
 {
@@ -125,8 +129,7 @@ void DrawCubeBottomTexture(Texture2D texture, Rectangle source, Vector3 position
     float texWidth = (float)texture.width;
     float texHeight = (float)texture.height;
 
-    // Set desired texture to be enabled while drawing following vertex data
-    rlSetTexture(texture.id);
+
 
     // Vertex data transformation can be defined with the commented lines,
     // but in this example we calculate the transformed vertex data directly when calling rlVertex3f()
@@ -135,8 +138,6 @@ void DrawCubeBottomTexture(Texture2D texture, Rectangle source, Vector3 position
         //rlTranslatef(2.0f, 0.0f, 0.0f);
         //rlRotatef(45, 0, 1, 0);
         //rlScalef(2.0f, 2.0f, 2.0f);
-
-        rlBegin(RL_QUADS);
         rlColor4ub(color.r, color.g, color.b, color.a); 
         rlNormal3f(0.0f, - 1.0f, 0.0f);
         rlTexCoord2f((source.x + source.width)/texWidth, source.y/texHeight);
@@ -147,10 +148,8 @@ void DrawCubeBottomTexture(Texture2D texture, Rectangle source, Vector3 position
         rlVertex3f(x + width/2, y - height/2, z + length/2);
         rlTexCoord2f((source.x + source.width)/texWidth, (source.y + source.height)/texHeight);
         rlVertex3f(x - width/2, y - height/2, z + length/2);
-        rlEnd();
     //rlPopMatrix();
 
-    rlSetTexture(0);
 }
 void DrawCubeFrontTexture(Texture2D texture, Rectangle source, Vector3 position, float width, float height, float length, Color color)
 {
@@ -161,7 +160,6 @@ void DrawCubeFrontTexture(Texture2D texture, Rectangle source, Vector3 position,
     float texHeight = (float)texture.height;
 
     // Set desired texture to be enabled while drawing following vertex data
-    rlSetTexture(texture.id);
 
     // Vertex data transformation can be defined with the commented lines,
     // but in this example we calculate the transformed vertex data directly when calling rlVertex3f()
@@ -171,7 +169,6 @@ void DrawCubeFrontTexture(Texture2D texture, Rectangle source, Vector3 position,
         //rlRotatef(45, 0, 1, 0);
         //rlScalef(2.0f, 2.0f, 2.0f);
 
-        rlBegin(RL_QUADS);
         rlColor4ub(color.r, color.g, color.b, color.a);
         rlNormal3f(0.0f, 0.0f, 1.0f);
         rlTexCoord2f(source.x/texWidth, (source.y + source.height)/texHeight);
@@ -182,10 +179,7 @@ void DrawCubeFrontTexture(Texture2D texture, Rectangle source, Vector3 position,
         rlVertex3f(x + width/2, y + height/2, z + length/2);
         rlTexCoord2f(source.x/texWidth, source.y/texHeight);
         rlVertex3f(x - width/2, y + height/2, z + length/2);
-        rlEnd();
     //rlPopMatrix();
-
-    rlSetTexture(0);
 }
 void DrawCubeBackTexture(Texture2D texture, Rectangle source, Vector3 position, float width, float height, float length, Color color)
 {
@@ -195,8 +189,6 @@ void DrawCubeBackTexture(Texture2D texture, Rectangle source, Vector3 position, 
     float texWidth = (float)texture.width;
     float texHeight = (float)texture.height;
 
-    // Set desired texture to be enabled while drawing following vertex data
-    rlSetTexture(texture.id);
 
     // Vertex data transformation can be defined with the commented lines,
     // but in this example we calculate the transformed vertex data directly when calling rlVertex3f()
@@ -205,8 +197,6 @@ void DrawCubeBackTexture(Texture2D texture, Rectangle source, Vector3 position, 
         //rlTranslatef(2.0f, 0.0f, 0.0f);
         //rlRotatef(45, 0, 1, 0);
         //rlScalef(2.0f, 2.0f, 2.0f);
-
-        rlBegin(RL_QUADS);
         rlColor4ub(color.r, color.g, color.b, color.a);
         rlNormal3f(0.0f, 0.0f, - 1.0f);
         rlTexCoord2f((source.x + source.width)/texWidth, (source.y + source.height)/texHeight);
@@ -217,10 +207,7 @@ void DrawCubeBackTexture(Texture2D texture, Rectangle source, Vector3 position, 
         rlVertex3f(x + width/2, y + height/2, z - length/2);
         rlTexCoord2f(source.x/texWidth, (source.y + source.height)/texHeight);
         rlVertex3f(x + width/2, y - height/2, z - length/2);
-        rlEnd();
     //rlPopMatrix();
-
-    rlSetTexture(0);
 }
 void DrawCubeRightTexture(Texture2D texture, Rectangle source, Vector3 position, float width, float height, float length, Color color)
 {
@@ -230,8 +217,6 @@ void DrawCubeRightTexture(Texture2D texture, Rectangle source, Vector3 position,
     float texWidth = (float)texture.width;
     float texHeight = (float)texture.height;
 
-    // Set desired texture to be enabled while drawing following vertex data
-    rlSetTexture(texture.id);
 
     // Vertex data transformation can be defined with the commented lines,
     // but in this example we calculate the transformed vertex data directly when calling rlVertex3f()
@@ -241,7 +226,6 @@ void DrawCubeRightTexture(Texture2D texture, Rectangle source, Vector3 position,
         //rlRotatef(45, 0, 1, 0);
         //rlScalef(2.0f, 2.0f, 2.0f);
 
-        rlBegin(RL_QUADS);
         rlColor4ub(color.r, color.g, color.b, color.a);
         rlNormal3f(1.0f, 0.0f, 0.0f);
         rlTexCoord2f((source.x + source.width)/texWidth, (source.y + source.height)/texHeight);
@@ -252,10 +236,8 @@ void DrawCubeRightTexture(Texture2D texture, Rectangle source, Vector3 position,
         rlVertex3f(x + width/2, y + height/2, z + length/2);
         rlTexCoord2f(source.x/texWidth, (source.y + source.height)/texHeight);
         rlVertex3f(x + width/2, y - height/2, z + length/2);
-        rlEnd();
     //rlPopMatrix();
 
-    rlSetTexture(0);
 }
 void DrawCubeLeftTexture(Texture2D texture, Rectangle source, Vector3 position, float width, float height, float length, Color color)
 {
@@ -265,8 +247,6 @@ void DrawCubeLeftTexture(Texture2D texture, Rectangle source, Vector3 position, 
     float texWidth = (float)texture.width;
     float texHeight = (float)texture.height;
 
-    // Set desired texture to be enabled while drawing following vertex data
-    rlSetTexture(texture.id);
 
     // Vertex data transformation can be defined with the commented lines,
     // but in this example we calculate the transformed vertex data directly when calling rlVertex3f()
@@ -276,7 +256,6 @@ void DrawCubeLeftTexture(Texture2D texture, Rectangle source, Vector3 position, 
         //rlRotatef(45, 0, 1, 0);
         //rlScalef(2.0f, 2.0f, 2.0f);
 
-        rlBegin(RL_QUADS);
         rlColor4ub(color.r, color.g, color.b, color.a);
         rlNormal3f( - 1.0f, 0.0f, 0.0f);
         rlTexCoord2f(source.x/texWidth, (source.y + source.height)/texHeight);
@@ -287,8 +266,5 @@ void DrawCubeLeftTexture(Texture2D texture, Rectangle source, Vector3 position, 
         rlVertex3f(x - width/2, y + height/2, z + length/2);
         rlTexCoord2f(source.x/texWidth, source.y/texHeight);
         rlVertex3f(x - width/2, y + height/2, z - length/2);
-        rlEnd();
     //rlPopMatrix();
-
-    rlSetTexture(0);
 }

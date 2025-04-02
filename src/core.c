@@ -5,48 +5,19 @@
 #include "utils.h"
 #include <math.h>
 #include "raymath.h"
+#include "rlgl.h" 
+
 RenderTexture2D* textures;
 Chunk* world[WORLD_SIZE][WORLD_SIZE];
 Texture2D atlas;
 
 #include "raylib.h"
 
-void init_textures()
-{
-    textures = (RenderTexture2D*)malloc(TEXTURES_COUNT * sizeof(RenderTexture2D));
-    for(int i = 0; i < TEXTURES_COUNT;  i++)
-    {
-        Cell cell = get_cell_from_type(i);
-        textures[i] = get_texture_from_atlas(cell);
-    }
-}
-
-RenderTexture2D get_texture_from_atlas(Cell cell)
-{
-    Texture2D atlas = LoadTexture("resources/atlas.png");
-    Rectangle source = {
-        cell.column * CELL_WIDTH,
-        cell.row * CELL_HEIGHT,
-        CELL_WIDTH,
-        CELL_HEIGHT
-    };
-     RenderTexture2D croppedRender = LoadRenderTexture(CELL_WIDTH, CELL_HEIGHT);
-     BeginTextureMode(croppedRender);
-        ClearBackground(BLANK);
-        DrawTextureRec(atlas, source, (Vector2){ 0, 0 }, WHITE);
-    EndTextureMode();
-    return croppedRender;
-}
-
 void load_texture()
 {
     atlas = LoadTexture("resources/atlas.png");
 }
 
-RenderTexture2D* get_texture_from_type(int type)
-{
-    return &textures[type];
-}
 
 void create_world()
 {
@@ -77,15 +48,15 @@ void draw_world(Camera camera)
 void generateChunk(Chunk* chunk, int chunkX, int chunkZ) 
 {
     fnl_state noise = fnlCreateState();
-    noise.noise_type = FNL_NOISE_OPENSIMPLEX2;
-    noise.seed = 1367;
-    noise.frequency = 0.014f;
+    noise.noise_type = FNL_NOISE_PERLIN;
+    noise.seed = 318;
+    noise.frequency = 0.014f + rand_float(0.01f, 0.03f);
     noise.fractal_type = FNL_FRACTAL_PINGPONG;
     noise.octaves = 8;
-    noise.lacunarity = 1.3f;
-    noise.gain = 0.130f;
-    noise.weighted_strength = 0.760f;
-    noise.ping_pong_strength = 1.170f;
+    noise.lacunarity = 2.450f;
+    noise.gain = 0.590f;
+    noise.weighted_strength = 1.040f;
+    noise.ping_pong_strength = 1.290f;
     int chunkWorldX = chunkX * CHUNK_SIZE;
     int chunkWorldZ = chunkZ * CHUNK_SIZE;
 
@@ -106,7 +77,7 @@ void generateChunk(Chunk* chunk, int chunkX, int chunkZ)
 
             float height = get_noise_at(&noise, worldX, worldZ);
 
-            height = (height + 1.0f) * 16.0f;
+            height = (height + 1.0f) * 6.0f;
             int blockHeight = (int)fmax(1.0f, fmin(height, CHUNK_HEIGHT - 1));
             chunk->blocks[i].pos = (Vector3){
             (float)x + chunkWorldX,
@@ -114,11 +85,11 @@ void generateChunk(Chunk* chunk, int chunkX, int chunkZ)
             (float)z + chunkWorldZ 
             };
                 if (y < blockHeight - 3) {
-                    chunk->blocks[i].type = FURNACE_SIDE;
+                    chunk->blocks[i].type = BEE_HIVE_SIDES_EMPTY;
                 } else if (y < blockHeight - 1) {
-                    chunk->blocks[i].type = STONE_SLAB;
+                    chunk->blocks[i].type = WOOL_PINK;
                 } else if (y == blockHeight - 1) {
-                    chunk->blocks[i].type = DIRT_HOED;
+                    chunk->blocks[i].type = BEET_1;
                 } else {
                     chunk->blocks[i].type = AIR;
                 }
@@ -155,6 +126,8 @@ void validate_indexes(int left, int right, int top, int bottom, int front, int b
 
 void draw_chunk(Chunk* chunk)
 {
+    rlSetTexture(atlas.id);  // Set texture ONCE
+    rlBegin(RL_QUADS);    
     int max = CHUNK_SIZE*CHUNK_SIZE*CHUNK_HEIGHT;
     for (int i = 0; i < CHUNK_SIZE * CHUNK_SIZE * CHUNK_HEIGHT; i++) {
         int x = i % CHUNK_SIZE;  
@@ -176,16 +149,20 @@ void draw_chunk(Chunk* chunk)
 
                     if (can_render == 1) 
                     {
-                        //Cell cell = get_cell_from_type(block.type);
-/*                         Matrix transform = MatrixTranslate(block.pos.x, block.pos.y, block.pos.z);
-                        DrawCustomCube(transform, &block); */
-                        RenderTexture2D* tex = get_texture_from_type(block.type);
-                        DrawCubeTexture(tex->texture, block.pos, 1.0f, 1.0f, 1.0f, WHITE);
-                        DrawCubeWires(block.pos, 1.0f, 1.0f, 1.0f, DARKGRAY);
+                        Cell cell = get_cell_from_type(block.type);
+                        Rectangle source = {
+                            cell.column * CELL_WIDTH,
+                            cell.row * CELL_HEIGHT,
+                            CELL_WIDTH,
+                            CELL_HEIGHT
+                        };
+                        DrawCubeTexture(atlas, source, block.pos, 1.0f, 1.0f, 1.0f, WHITE);
                     }
 
                 }
     }
+    rlEnd();                   // End batch AFTER all cubes
+    rlSetTexture(0);   
 }
 
 
