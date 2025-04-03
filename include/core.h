@@ -3,6 +3,13 @@
 #include "raylib.h"
 #include "utils.h"
 #include "FastNoiseLite.h"
+
+typedef struct {
+    Vector3 normal;
+    float d;
+} Plane;
+
+
 #define CHUNK_SIZE 16
 #define CHUNK_HEIGHT 32
 #define WORLD_SIZE 3
@@ -87,6 +94,7 @@ typedef struct Block{
 
 typedef struct Chunk {
     Block* blocks;
+    BoundingBox bounding_box;
 } Chunk;
 
 void draw_chunk(Chunk* chunk);
@@ -101,5 +109,9 @@ void draw_world(Camera camera);
 extern RenderTexture2D* textures;
 extern Chunk* world[WORLD_SIZE][WORLD_SIZE];
 extern Texture2D atlas;
+
+Plane NormalizePlane(float a, float b, float c, float d);
+void ExtractFrustumPlanes(Matrix vp, Plane planes[6]);
+bool IsBoxInFrustum(Plane planes[6], BoundingBox box);
 
 #endif

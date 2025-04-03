@@ -15,9 +15,42 @@ Texture2D atlas;
 
 void load_texture()
 {
-    atlas = LoadTexture("resources/atlas.png");
+    atlas = LoadTexture("resources/textures/atlas.png");
 }
 
+Plane NormalizePlane(float a, float b, float c, float d) {
+    float length = sqrtf(a * a + b * b + c * c);
+    return (Plane) { (Vector3){ a / length, b / length, c / length }, d / length };
+}
+
+bool IsBoxInFrustum(Plane planes[6], BoundingBox box) {
+    for (int i = 0; i < 6; i++) {
+        Vector3 p = {
+            (planes[i].normal.x > 0) ? box.max.x : box.min.x,
+            (planes[i].normal.y > 0) ? box.max.y : box.min.y,
+            (planes[i].normal.z > 0) ? box.max.z : box.min.z
+        };
+        if ((planes[i].normal.x * p.x + planes[i].normal.y * p.y + planes[i].normal.z * p.z + planes[i].d) < 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
+void ExtractFrustumPlanes(Matrix vp, Plane planes[6]) {
+    // Left Plane
+    planes[0] = NormalizePlane(vp.m3  + vp.m0, vp.m7  + vp.m4, vp.m11 + vp.m8, vp.m15 + vp.m12);
+    // Right Plane
+    planes[1] = NormalizePlane(vp.m3  - vp.m0, vp.m7  - vp.m4, vp.m11 - vp.m8, vp.m15 - vp.m12);
+    // Bottom Plane
+    planes[2] = NormalizePlane(vp.m3  + vp.m1, vp.m7  + vp.m5, vp.m11 + vp.m9, vp.m15 + vp.m13);
+    // Top Plane
+    planes[3] = NormalizePlane(vp.m3  - vp.m1, vp.m7  - vp.m5, vp.m11 - vp.m9, vp.m15 - vp.m13);
+    // Near Plane
+    planes[4] = NormalizePlane(vp.m3  + vp.m2, vp.m7  + vp.m6, vp.m11 + vp.m10, vp.m15 + vp.m14);
+    // Far Plane
+    planes[5] = NormalizePlane(vp.m3  - vp.m2, vp.m7  - vp.m6, vp.m11 - vp.m10, vp.m15 - vp.m14);
+}
 
 void create_world()
 {
@@ -32,17 +65,22 @@ void create_world()
 }
 void draw_world(Camera camera)
 {
+    Plane frustum[6];
+    Matrix view = GetCameraMatrix(camera);
+    Matrix proj = MatrixPerspective(camera.fovy * DEG2RAD, 1280.0f / 720.0f, 0.1f, 1000.0f);
+    Matrix vp = MatrixMultiply(view, proj);
+    ExtractFrustumPlanes(vp, frustum);
     for (int chunkX = 0; chunkX < WORLD_SIZE; chunkX++)
     {
         for (int chunkZ = 0; chunkZ < WORLD_SIZE; chunkZ++)
-        {
-/*             if (is_chunk_visible(camera, world[chunkX][chunkZ], chunkX, chunkZ))
-            { */
+        {   
+            BoundingBox chunkBox = world[chunkX][chunkZ]->bounding_box;
+            if(IsBoxInFrustum(frustum, chunkBox))
                 draw_chunk(world[chunkX][chunkZ]);
-/*             } */
         }
     }
 }
+
 
 
 void generateChunk(Chunk* chunk, int chunkX, int chunkZ) 
@@ -67,6 +105,13 @@ void generateChunk(Chunk* chunk, int chunkX, int chunkZ)
         free(chunk);
         return;
     }
+    float minX = chunkX * CHUNK_SIZE;
+    float minY = 0.0f;
+    float minZ = chunkZ * CHUNK_SIZE;
+    float maxX = minX + CHUNK_SIZE;
+    float maxY = CHUNK_HEIGHT;
+    float maxZ = minZ + CHUNK_SIZE;
+    chunk->bounding_box = (BoundingBox){(Vector3){minX, minY, minZ}, (Vector3){maxX, maxY, maxZ}};
 
     for (int i = 0; i < CHUNK_SIZE * CHUNK_SIZE * CHUNK_HEIGHT; i++) {
         int x = i % CHUNK_SIZE;  
@@ -93,12 +138,6 @@ void generateChunk(Chunk* chunk, int chunkX, int chunkZ)
                 } else {
                     chunk->blocks[i].type = AIR;
                 }
-
-/*         if(chunk->blocks[i].type != AIR)
-        {
-            Cell cell = get_cell_from_type(chunk->blocks[i].type);
-            //chunk->blocks[i].mesh = CreateCubeWithAtlas(&cell);
-        } */
     }
 }
 int validate_index(int index, int max, Chunk* chunk)

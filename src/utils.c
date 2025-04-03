@@ -4,12 +4,10 @@
 #include <stdlib.h>
 #include <math.h>
 
-// Returns a random double between min and max
 double rand_double(double min, double max) {
     return min + (max - min) * ((double)rand() / (double)RAND_MAX);
 }
 
-// Returns a random float between min and max
 float rand_float(float min, float max) {
     return min + (max - min) * ((float)rand() / (float)RAND_MAX);
 }
