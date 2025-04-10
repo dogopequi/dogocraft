@@ -76,7 +76,7 @@ void draw_world(Camera camera)
         {   
             BoundingBox chunkBox = world[chunkX][chunkZ]->bounding_box;
             if(IsBoxInFrustum(frustum, chunkBox))
-                draw_chunk(world[chunkX][chunkZ]);
+                draw_chunk(world[chunkX][chunkZ], camera);
         }
     }
 }
@@ -112,7 +112,7 @@ void generateChunk(Chunk* chunk, int chunkX, int chunkZ)
     float maxY = CHUNK_HEIGHT;
     float maxZ = minZ + CHUNK_SIZE;
     chunk->bounding_box = (BoundingBox){(Vector3){minX, minY, minZ}, (Vector3){maxX, maxY, maxZ}};
-
+    Vector3 cubeSize = { 1.0f, 1.0f, 1.0f };
     for (int i = 0; i < CHUNK_SIZE * CHUNK_SIZE * CHUNK_HEIGHT; i++) {
         int x = i % CHUNK_SIZE;  
         int y = (i / (CHUNK_SIZE * CHUNK_SIZE));
@@ -138,6 +138,13 @@ void generateChunk(Chunk* chunk, int chunkX, int chunkZ)
                 } else {
                     chunk->blocks[i].type = AIR;
                 }
+            if(chunk->blocks[i].type != AIR)
+            {
+                chunk->blocks[i].box = (BoundingBox) {
+                    (Vector3){chunk->blocks[i].pos.x - cubeSize.x, chunk->blocks[i].pos.y - cubeSize.y, chunk->blocks[i].pos.z - cubeSize.z},
+                    (Vector3){chunk->blocks[i].pos.x + cubeSize.x, chunk->blocks[i].pos.y + cubeSize.y, chunk->blocks[i].pos.z + cubeSize.z}
+                };
+            }
     }
 }
 int validate_index(int index, int max, Chunk* chunk)
@@ -163,7 +170,7 @@ void validate_indexes(int left, int right, int top, int bottom, int front, int b
 
 
 
-void draw_chunk(Chunk* chunk)
+void draw_chunk(Chunk* chunk, Camera camera)
 {
     rlSetTexture(atlas.id);  // Set texture ONCE
     rlBegin(RL_QUADS);    
@@ -188,6 +195,19 @@ void draw_chunk(Chunk* chunk)
 
                     if (can_render == 1) 
                     {
+                        Vector3 start = Vector3Add(block.pos, (Vector3){0.5f, 0.5f, 0.5f});
+                        Vector3 dir = Vector3Normalize(Vector3Subtract(camera.position, start));
+                        Ray ray = {
+                            .position = start,
+                            .direction = dir
+                        };
+                        float max_distance = Vector3Distance(start, camera.position);
+                        RayCollision collision = GetRayCollisionBox(ray, block.box); // this is super wrong, just a placeholder. I dont think raylib as it is can do what i want out of the box. i need to check with ANY bounding box
+                        if(collision.hit && collision.distance < max_distance)
+                        {
+                            continue;
+                        }
+
                         Cell cell = get_cell_from_type(block.type);
                         Rectangle source = {
                             cell.column * CELL_WIDTH,
@@ -195,6 +215,7 @@ void draw_chunk(Chunk* chunk)
                             CELL_WIDTH,
                             CELL_HEIGHT
                         };
+
                         DrawCubeTexture(atlas, source, block.pos, 1.0f, 1.0f, 1.0f, WHITE);
                     }
 

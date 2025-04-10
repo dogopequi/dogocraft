@@ -28,17 +28,6 @@ int main(void)
 
     load_texture();
     create_world();
-
-    Shader shader = LoadShader(0, TextFormat("resources/shaders/swirl.fs", GLSL_VERSION));
-
-    // Get variable (uniform) location on the shader to connect with the program
-    // NOTE: If uniform variable could not be found in the shader, function returns -1
-    int swirlCenterLoc = GetShaderLocation(shader, "center");
-
-    float swirlCenter[2] = { (float)screenWidth/2, (float)screenHeight/2 };
-
-    // Create a RenderTexture2D to be used for render to texture
-    RenderTexture2D target = LoadRenderTexture(screenWidth, screenHeight);
     while (!WindowShouldClose())
     {
         UpdateCameraPro(&camera,
@@ -56,27 +45,12 @@ int main(void)
                 0.0f                                                // Rotation: roll
             },
             GetMouseWheelMove()*2.0f);  
-        Vector2 mousePosition = GetMousePosition();
-
-        swirlCenter[0] = mousePosition.x;
-        swirlCenter[1] = screenHeight - mousePosition.y;
-
-        SetShaderValue(shader, swirlCenterLoc, swirlCenter, SHADER_UNIFORM_VEC2);   
-        BeginTextureMode(target);  
+        BeginDrawing();
         ClearBackground(RAYWHITE);   
         BeginMode3D(camera);
         draw_world(camera);
         EndMode3D();
-        EndTextureMode(); 
-
-        BeginDrawing();
-        ClearBackground(RAYWHITE); 
-        BeginShaderMode(shader);
-        DrawTextureRec(target.texture, (Rectangle){ 0, 0, (float)target.texture.width, (float)-target.texture.height }, (Vector2){ 0, 0 }, WHITE);
-        EndShaderMode();
-        DrawFPS(10, 10);
         EndDrawing();
-
     }
     CloseWindow(); 
     CloseAudioDevice();
