@@ -76,7 +76,7 @@ void draw_world(Camera camera)
         {   
             BoundingBox chunkBox = world[chunkX][chunkZ]->bounding_box;
             if(IsBoxInFrustum(frustum, chunkBox))
-                draw_chunk(world[chunkX][chunkZ]);
+                draw_chunk(world[chunkX][chunkZ], camera);
         }
     }
 }
@@ -112,7 +112,7 @@ void generateChunk(Chunk* chunk, int chunkX, int chunkZ)
     float maxY = CHUNK_HEIGHT;
     float maxZ = minZ + CHUNK_SIZE;
     chunk->bounding_box = (BoundingBox){(Vector3){minX, minY, minZ}, (Vector3){maxX, maxY, maxZ}};
-
+    Vector3 cubeSize = { 1.0f, 1.0f, 1.0f };
     for (int i = 0; i < CHUNK_SIZE * CHUNK_SIZE * CHUNK_HEIGHT; i++) {
         int x = i % CHUNK_SIZE;  
         int y = (i / (CHUNK_SIZE * CHUNK_SIZE));
@@ -138,36 +138,43 @@ void generateChunk(Chunk* chunk, int chunkX, int chunkZ)
                 } else {
                     chunk->blocks[i].type = AIR;
                 }
+            if(chunk->blocks[i].type != AIR)
+            {
+                chunk->blocks[i].box = (BoundingBox) {
+                    (Vector3){chunk->blocks[i].pos.x - cubeSize.x, chunk->blocks[i].pos.y - cubeSize.y, chunk->blocks[i].pos.z - cubeSize.z},
+                    (Vector3){chunk->blocks[i].pos.x + cubeSize.x, chunk->blocks[i].pos.y + cubeSize.y, chunk->blocks[i].pos.z + cubeSize.z}
+                };
+            }
     }
 }
-int validate_index(int index, int max, Chunk* chunk)
+
+void get_visible_faces(int x, int y, int z, Chunk* chunk, int* faces)
 {
-    if ((index < 0) || (index >= max))
+    faces[0] = !is_block_solid(x + 1, y, z, chunk); // Right (+X)
+    faces[1] = !is_block_solid(x - 1, y, z, chunk); // Left (-X)
+    faces[2] = !is_block_solid(x, y + 1, z, chunk); // Top (+Y)
+    faces[3] = !is_block_solid(x, y - 1, z, chunk); // Bottom (-Y)
+    faces[4] = !is_block_solid(x, y, z + 1, chunk); // Front (+Z)
+    faces[5] = !is_block_solid(x, y, z - 1, chunk); // Back (-Z)
+}
+
+
+int is_block_solid(int x, int y, int z, Chunk* chunk)
+{
+    if (x < 0 || x >= CHUNK_SIZE ||
+        y < 0 || y >= CHUNK_HEIGHT ||
+        z < 0 || z >= CHUNK_SIZE)
         return 0;
+    int index = x + z * CHUNK_SIZE + y * CHUNK_SIZE * CHUNK_SIZE;
     return chunk->blocks[index].type != AIR;
 }
 
-void validate_indexes(int left, int right, int top, int bottom, int front, int back, int max, int* canrender, Chunk* chunk)
+
+
+void draw_chunk(Chunk* chunk, Camera camera)
 {
-    if (validate_index(left, max, chunk) &&
-        validate_index(right, max, chunk) &&
-        validate_index(top, max, chunk) &&
-        validate_index(bottom, max, chunk) &&
-        validate_index(front, max, chunk) &&
-        validate_index(back, max, chunk)) {
-        *canrender = 0;
-    } else {
-        *canrender = 1;
-    }
-}
-
-
-
-void draw_chunk(Chunk* chunk)
-{
-    rlSetTexture(atlas.id);  // Set texture ONCE
+    rlSetTexture(atlas.id);
     rlBegin(RL_QUADS);    
-    int max = CHUNK_SIZE*CHUNK_SIZE*CHUNK_HEIGHT;
     for (int i = 0; i < CHUNK_SIZE * CHUNK_SIZE * CHUNK_HEIGHT; i++) {
         int x = i % CHUNK_SIZE;  
         int y = (i / (CHUNK_SIZE * CHUNK_SIZE));
@@ -175,19 +182,6 @@ void draw_chunk(Chunk* chunk)
                 Block block = chunk->blocks[i];
                  if(block.type != AIR)
                 {
-                    int can_render = 1;
-                    int left   = (x > 0) ? i - 1 : -1;
-                    int right  = (x < CHUNK_SIZE - 1) ? i + 1 : -1;
-                    int bottom = (y > 0) ? i - (CHUNK_SIZE * CHUNK_SIZE) : -1;
-                    int top    = (y < CHUNK_HEIGHT - 1) ? i + (CHUNK_SIZE * CHUNK_SIZE) : -1;
-                    int front  = (z > 0) ? i - CHUNK_SIZE : -1;
-                    int back   = (z < CHUNK_SIZE - 1) ? i + CHUNK_SIZE : -1;
-
-
-                    validate_indexes(left, right, bottom, top, front, back, max, &can_render, chunk);
-
-                    if (can_render == 1) 
-                    {
                         Cell cell = get_cell_from_type(block.type);
                         Rectangle source = {
                             cell.column * CELL_WIDTH,
@@ -195,12 +189,19 @@ void draw_chunk(Chunk* chunk)
                             CELL_WIDTH,
                             CELL_HEIGHT
                         };
-                        DrawCubeTexture(atlas, source, block.pos, 1.0f, 1.0f, 1.0f, WHITE);
-                    }
+                        int faces[6];
+                        get_visible_faces(x, y, z, chunk, faces);
+
+                        if (faces[0]) DrawCubeRightTexture(atlas, source, block.pos, 1.0f, 1.0f, 1.0f, WHITE);
+                        if (faces[1]) DrawCubeLeftTexture(atlas, source, block.pos, 1.0f, 1.0f, 1.0f, WHITE);
+                        if (faces[2]) DrawCubeTopTexture(atlas, source, block.pos, 1.0f, 1.0f, 1.0f, WHITE);
+                        if (faces[3]) DrawCubeBottomTexture(atlas, source, block.pos, 1.0f, 1.0f, 1.0f, WHITE);
+                        if (faces[4]) DrawCubeFrontTexture(atlas, source, block.pos, 1.0f, 1.0f, 1.0f, WHITE);
+                        if (faces[5]) DrawCubeBackTexture(atlas, source, block.pos, 1.0f, 1.0f, 1.0f, WHITE);
 
                 }
     }
-    rlEnd();                   // End batch AFTER all cubes
+    rlEnd(); 
     rlSetTexture(0);   
 }
 

@@ -89,7 +89,7 @@ typedef struct Block{
     int type;
     Vector3 pos;
     Mesh mesh;
-
+    BoundingBox box;
 } Block;
 
 typedef struct Chunk {
@@ -97,9 +97,9 @@ typedef struct Chunk {
     BoundingBox bounding_box;
 } Chunk;
 
-void draw_chunk(Chunk* chunk);
-int validate_index(int index, int max, Chunk* chunk);
-void validate_indexes(int left, int right, int top, int bottom, int front, int back, int max, int* canrender, Chunk* chunk);
+void draw_chunk(Chunk* chunk, Camera camera);
+void get_visible_faces(int x, int y, int z, Chunk* chunk, int* faces);
+int is_block_solid(int x, int y, int z, Chunk* chunk);
 void generateChunk(Chunk* chunk, int chunkX, int chunkZ);
 Cell get_cell_from_type(int type);
 float get_noise_at(fnl_state* noise, int worldX, int worldZ);
