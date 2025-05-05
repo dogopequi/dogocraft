@@ -98,8 +98,8 @@ typedef struct Chunk {
 } Chunk;
 
 void draw_chunk(Chunk* chunk, Camera camera);
-int validate_index(int index, int max, Chunk* chunk);
-void validate_indexes(int left, int right, int top, int bottom, int front, int back, int max, int* canrender, Chunk* chunk);
+void get_visible_faces(int x, int y, int z, Chunk* chunk, int* faces);
+int is_block_solid(int x, int y, int z, Chunk* chunk);
 void generateChunk(Chunk* chunk, int chunkX, int chunkZ);
 Cell get_cell_from_type(int type);
 float get_noise_at(fnl_state* noise, int worldX, int worldZ);

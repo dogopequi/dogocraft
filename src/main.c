@@ -55,6 +55,6 @@ int main(void)
     CloseWindow(); 
     CloseAudioDevice();
     return 0;
-    // TODO collision, water, face rendering optimization, edge chunk blocks culling, block order to camera culling
+    // TODO collision, water, edge chunk blocks culling, block order to camera culling
 }
 
